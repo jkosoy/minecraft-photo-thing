@@ -298,7 +298,7 @@ export default function MinecraftConverter() {
     const manifest = {
       format_version: 2,
       header: {
-        description: `Minecraft photo art pack: ${packName}`,
+        description: `Minecraft Photo Thing: ${packName}`,
         name: packName,
         uuid: generateUUID(),
         version: [1, 0, 0],
@@ -316,9 +316,9 @@ export default function MinecraftConverter() {
 
     zip.file('manifest.json', JSON.stringify(manifest, null, 2))
 
-    // Create structure file
+    // Create structure file in filename/structures/filename/filename.mcstructure
     const structureData = createStructureFile(blockData, PALETTES[palette].colors)
-    zip.folder('structures')!.file(`${packName}.mcstructure`, structureData)
+    zip.folder(`${packName}/structures/${packName}`)!.file(`${packName}.mcstructure`, structureData)
 
     // Create and add icon from preview
     const iconBlob = await generateIconFromPreview()

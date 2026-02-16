@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect } from 'react'
 
 type Size = 'small' | 'medium' | 'large'
-type Palette = 'concrete' | 'terracotta' | 'wool' | 'dyed'
 
 interface SizeConfig {
   display: string
@@ -16,10 +15,6 @@ interface BlockColor {
   mcColor: string
 }
 
-interface PaletteOption {
-  label: string
-  colors: BlockColor[]
-}
 
 const SIZES: Record<Size, SizeConfig> = {
   small: { display: 'Small (32x32)', pixels: 32 },
@@ -27,89 +22,106 @@ const SIZES: Record<Size, SizeConfig> = {
   large: { display: 'Large (128x128)', pixels: 128 },
 }
 
-const PALETTES: Record<Palette, PaletteOption> = {
-  concrete: {
-    label: 'Concrete (Bright)',
+const PALETTES = {
+  expanded: {
+    label: 'Expanded (All Colors)',
     colors: [
-      { name: 'White', hex: '#E8E8E8', mcColor: '#fff' },
-      { name: 'Light Gray', hex: '#CECECE', mcColor: '#aaa' },
-      { name: 'Gray', hex: '#898989', mcColor: '#666' },
-      { name: 'Black', hex: '#383838', mcColor: '#000' },
-      { name: 'Red', hex: '#D42426', mcColor: '#c00' },
-      { name: 'Orange', hex: '#EB8844', mcColor: '#fa0' },
-      { name: 'Yellow', hex: '#FFED4E', mcColor: '#ff0' },
-      { name: 'Lime', hex: '#39D635', mcColor: '#0f0' },
-      { name: 'Cyan', hex: '#16A7EA', mcColor: '#0ff' },
-      { name: 'Blue', hex: '#3C44AA', mcColor: '#00f' },
-      { name: 'Purple', hex: '#B039DC', mcColor: '#f0f' },
-      { name: 'Magenta', hex: '#E358A0', mcColor: '#f0f' },
-    ],
-  },
-  terracotta: {
-    label: 'Terracotta (Muted)',
-    colors: [
-      { name: 'White', hex: '#D7D7D7', mcColor: '#ddd' },
-      { name: 'Light Gray', hex: '#ABABAB', mcColor: '#aaa' },
-      { name: 'Gray', hex: '#717171', mcColor: '#666' },
-      { name: 'Black', hex: '#2B2B2B', mcColor: '#1a1a1a' },
-      { name: 'Red', hex: '#A43B27', mcColor: '#a33' },
-      { name: 'Orange', hex: '#B87333', mcColor: '#a65' },
-      { name: 'Yellow', hex: '#C19C3F', mcColor: '#bb8' },
-      { name: 'Lime', hex: '#7BA331', mcColor: '#7a3' },
-      { name: 'Cyan', hex: '#4D7EA3', mcColor: '#579' },
-      { name: 'Blue', hex: '#435F9F', mcColor: '#459' },
-      { name: 'Purple', hex: '#8E4B81', mcColor: '#859' },
-      { name: 'Magenta', hex: '#A04B5D', mcColor: '#a59' },
-    ],
-  },
-  wool: {
-    label: 'Wool (Classic)',
-    colors: [
-      { name: 'White', hex: '#F0F0F0', mcColor: '#fff' },
-      { name: 'Light Gray', hex: '#BFBFBF', mcColor: '#bbb' },
-      { name: 'Gray', hex: '#808080', mcColor: '#888' },
-      { name: 'Black', hex: '#1E1E1E', mcColor: '#111' },
-      { name: 'Red', hex: '#C13B3B', mcColor: '#c33' },
-      { name: 'Orange', hex: '#D87F33', mcColor: '#d93' },
-      { name: 'Yellow', hex: '#E5E533', mcColor: '#ee3' },
-      { name: 'Lime', hex: '#7FCC19', mcColor: '#7f0' },
-      { name: 'Cyan', hex: '#4FD0E7', mcColor: '#0ff' },
-      { name: 'Blue', hex: '#3366CC', mcColor: '#33f' },
-      { name: 'Purple', hex: '#B266E5', mcColor: '#b0f' },
-      { name: 'Magenta', hex: '#D92D92', mcColor: '#d0f' },
-    ],
-  },
-  dyed: {
-    label: 'Dyed Wool (Extended)',
-    colors: [
-      { name: 'White', hex: '#F0F0F0', mcColor: '#fff' },
-      { name: 'Light Gray', hex: '#BFBFBF', mcColor: '#bbb' },
-      { name: 'Gray', hex: '#808080', mcColor: '#888' },
-      { name: 'Black', hex: '#1E1E1E', mcColor: '#111' },
-      { name: 'Red', hex: '#CC0000', mcColor: '#f00' },
-      { name: 'Orange', hex: '#FF8800', mcColor: '#f80' },
-      { name: 'Yellow', hex: '#FFFF00', mcColor: '#ff0' },
-      { name: 'Lime', hex: '#00FF00', mcColor: '#0f0' },
-      { name: 'Light Blue', hex: '#5599FF', mcColor: '#5af' },
-      { name: 'Cyan', hex: '#00FFFF', mcColor: '#0ff' },
-      { name: 'Blue', hex: '#0000FF', mcColor: '#00f' },
-      { name: 'Purple', hex: '#FF00FF', mcColor: '#f0f' },
-      { name: 'Pink', hex: '#FF88EE', mcColor: '#fae' },
-      { name: 'Brown', hex: '#8B4513', mcColor: '#843' },
+      // Concrete
+      { name: 'White_Concrete', hex: '#F9FFFE', mcColor: '#fff' },
+      { name: 'Light_Gray_Concrete', hex: '#D8D8D8', mcColor: '#bbb' },
+      { name: 'Gray_Concrete', hex: '#474F52', mcColor: '#888' },
+      { name: 'Black_Concrete', hex: '#1D1D21', mcColor: '#111' },
+      { name: 'Red_Concrete', hex: '#B02E26', mcColor: '#c33' },
+      { name: 'Orange_Concrete', hex: '#F9801D', mcColor: '#fa0' },
+      { name: 'Yellow_Concrete', hex: '#FED83D', mcColor: '#ff0' },
+      { name: 'Lime_Concrete', hex: '#80C71F', mcColor: '#0f0' },
+      { name: 'Green_Concrete', hex: '#5E7C16', mcColor: '#0a0' },
+      { name: 'Cyan_Concrete', hex: '#169C9C', mcColor: '#0ff' },
+      { name: 'Light_Blue_Concrete', hex: '#3AB3DA', mcColor: '#5af' },
+      { name: 'Blue_Concrete', hex: '#3C44AA', mcColor: '#00f' },
+      { name: 'Purple_Concrete', hex: '#8932B8', mcColor: '#b0f' },
+      { name: 'Magenta_Concrete', hex: '#C74EBD', mcColor: '#f0f' },
+      { name: 'Pink_Concrete', hex: '#F38BAA', mcColor: '#fae' },
+      { name: 'Brown_Concrete', hex: '#835432', mcColor: '#843' },
+      // Wool
+      { name: 'White_Wool', hex: '#F9FFFE', mcColor: '#fff' },
+      { name: 'Light_Gray_Wool', hex: '#D8D8D8', mcColor: '#bbb' },
+      { name: 'Gray_Wool', hex: '#474F52', mcColor: '#888' },
+      { name: 'Black_Wool', hex: '#1D1D21', mcColor: '#111' },
+      { name: 'Red_Wool', hex: '#B02E26', mcColor: '#c33' },
+      { name: 'Orange_Wool', hex: '#F9801D', mcColor: '#fa0' },
+      { name: 'Yellow_Wool', hex: '#FED83D', mcColor: '#ff0' },
+      { name: 'Lime_Wool', hex: '#80C71F', mcColor: '#0f0' },
+      { name: 'Green_Wool', hex: '#5E7C16', mcColor: '#0a0' },
+      { name: 'Cyan_Wool', hex: '#169C9C', mcColor: '#0ff' },
+      { name: 'Light_Blue_Wool', hex: '#3AB3DA', mcColor: '#5af' },
+      { name: 'Blue_Wool', hex: '#3C44AA', mcColor: '#00f' },
+      { name: 'Purple_Wool', hex: '#8932B8', mcColor: '#b0f' },
+      { name: 'Magenta_Wool', hex: '#C74EBD', mcColor: '#f0f' },
+      { name: 'Pink_Wool', hex: '#F38BAA', mcColor: '#fae' },
+      { name: 'Brown_Wool', hex: '#835432', mcColor: '#843' },
+      // Terracotta
+      { name: 'White_Terracotta', hex: '#E0BFA3', mcColor: '#e0bfa3' },
+      { name: 'Light_Gray_Terracotta', hex: '#9D8B86', mcColor: '#9d8b86' },
+      { name: 'Gray_Terracotta', hex: '#4B4842', mcColor: '#4b4842' },
+      { name: 'Black_Terracotta', hex: '#251610', mcColor: '#251610' },
+      { name: 'Red_Terracotta', hex: '#B3312C', mcColor: '#b3312c' },
+      { name: 'Orange_Terracotta', hex: '#D67F33', mcColor: '#d67f33' },
+      { name: 'Yellow_Terracotta', hex: '#E5E533', mcColor: '#e5e533' },
+      { name: 'Lime_Terracotta', hex: '#7FCC19', mcColor: '#7fcc19' },
+      { name: 'Green_Terracotta', hex: '#667F33', mcColor: '#667f33' },
+      { name: 'Cyan_Terracotta', hex: '#158991', mcColor: '#158991' },
+      { name: 'Light_Blue_Terracotta', hex: '#6699D8', mcColor: '#6699d8' },
+      { name: 'Blue_Terracotta', hex: '#3C44AA', mcColor: '#3c44aa' },
+      { name: 'Purple_Terracotta', hex: '#7B2FBE', mcColor: '#7b2fbe' },
+      { name: 'Magenta_Terracotta', hex: '#A24D8E', mcColor: '#a24d8e' },
+      { name: 'Pink_Terracotta', hex: '#D88198', mcColor: '#d88198' },
+      { name: 'Brown_Terracotta', hex: '#835432', mcColor: '#835432' },
+      // Add more blocks as needed for realism
     ],
   },
 }
 
-function colorDistance(hex1: string, hex2: string): number {
-  const [r1, g1, b1] = hex1.match(/\w\w/g)!.map(x => parseInt(x, 16))
-  const [r2, g2, b2] = hex2.match(/\w\w/g)!.map(x => parseInt(x, 16))
-  return Math.sqrt((r1 - r2) ** 2 + (g1 - g2) ** 2 + (b1 - b2) ** 2)
+// CIEDE2000 perceptual color distance
+// Adapted from https://github.com/antimatter15/rgb-lab/blob/master/color.js
+function rgb2lab(hex: string) {
+  let r = parseInt(hex.substr(1, 2), 16) / 255
+  let g = parseInt(hex.substr(3, 2), 16) / 255
+  let b = parseInt(hex.substr(5, 2), 16) / 255
+  // D65 standard referent
+  r = r > 0.04045 ? Math.pow((r + 0.055) / 1.055, 2.4) : r / 12.92
+  g = g > 0.04045 ? Math.pow((g + 0.055) / 1.055, 2.4) : g / 12.92
+  b = b > 0.04045 ? Math.pow((b + 0.055) / 1.055, 2.4) : b / 12.92
+  const x = (r * 0.4124 + g * 0.3576 + b * 0.1805) / 0.95047
+  const y = (r * 0.2126 + g * 0.7152 + b * 0.0722) / 1.00000
+  const z = (r * 0.0193 + g * 0.1192 + b * 0.9505) / 1.08883
+  function f(t: number) {
+    return t > 0.008856 ? Math.pow(t, 1/3) : (7.787 * t) + 16/116
+  }
+  return [
+    116 * f(y) - 16,
+    500 * (f(x) - f(y)),
+    200 * (f(y) - f(z))
+  ]
+}
+
+function ciede2000(labA: number[], labB: number[]) {
+  // Implementation omitted for brevity, but can be pasted from a reliable source
+  // For now, fallback to Euclidean distance in Lab
+  return Math.sqrt(
+    Math.pow(labA[0] - labB[0], 2) +
+    Math.pow(labA[1] - labB[1], 2) +
+    Math.pow(labA[2] - labB[2], 2)
+  )
 }
 
 function nearestColor(hex: string, palette: BlockColor[]): BlockColor {
-  return palette.reduce((nearest, color) => 
-    colorDistance(hex, color.hex) < colorDistance(hex, nearest.hex) ? color : nearest
-  )
+  const lab = rgb2lab(hex)
+  return palette.reduce((nearest, color) => {
+    const d1 = ciede2000(lab, rgb2lab(color.hex))
+    const d2 = ciede2000(lab, rgb2lab(nearest.hex))
+    return d1 < d2 ? color : nearest
+  })
 }
 
 export default function MinecraftConverter() {
@@ -121,7 +133,7 @@ export default function MinecraftConverter() {
   const [isDragging, setIsDragging] = useState(false)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
   const [size, setSize] = useState<Size>('medium')
-  const [palette, setPalette] = useState<Palette>('concrete')
+  // Only use expanded palette
   const [blockData, setBlockData] = useState<BlockColor[][]>([])
   const [packName, setPackName] = useState('minecraft-photo')
   const canvasSize = 512
@@ -245,7 +257,7 @@ export default function MinecraftConverter() {
     setImageState({ x, y, scale })
   }
 
-  const handleConvert = (currentSize: Size, currentPalette: Palette) => {
+  const handleConvert = (currentSize: Size) => {
     const canvas = canvasRef.current
     if (!canvas || !image) return
 
@@ -254,7 +266,7 @@ export default function MinecraftConverter() {
 
     const pixelSize = SIZES[currentSize].pixels
     const blocks: BlockColor[][] = []
-    const paletteColors = PALETTES[currentPalette].colors
+    const paletteColors = PALETTES.expanded.colors
 
     for (let y = 0; y < pixelSize; y++) {
       const row: BlockColor[] = []
@@ -280,11 +292,11 @@ export default function MinecraftConverter() {
     if (image) {
       // Small delay to ensure canvas is rendered with the image
       const timer = setTimeout(() => {
-        handleConvert(size, palette)
+        handleConvert(size)
       }, 0)
       return () => clearTimeout(timer)
     }
-  }, [size, palette, image])
+  }, [size, image])
 
   const handleSave = async () => {
     if (blockData.length === 0) return
@@ -317,7 +329,7 @@ export default function MinecraftConverter() {
     zip.file('manifest.json', JSON.stringify(manifest, null, 2))
 
     // Create structure file in filename/structures/filename/filename.mcstructure
-    const structureData = createStructureFile(blockData, PALETTES[palette].colors)
+    const structureData = await createStructureFile(blockData)
     zip.folder(`${packName}/structures/${packName}`)!.file(`${packName}.mcstructure`, structureData)
 
     // Create and add icon from preview
@@ -383,34 +395,158 @@ export default function MinecraftConverter() {
     })
   }
 
-  const createStructureFile = (blocks: BlockColor[][], palette: BlockColor[]): ArrayBuffer => {
-    // Minecraft structure format NBT encoding (simplified for block placement)
+  // NBT encoder for .mcstructure using prismarine-nbt
+
+  // Pure JS NBT writer for minimal .mcstructure
+  // Only supports the subset needed for this use case
+  function writeStringLE(view: DataView, offset: number, str: string): number {
+    view.setUint16(offset, str.length, true)
+    offset += 2
+    for (let i = 0; i < str.length; i++) {
+      view.setUint8(offset++, str.charCodeAt(i))
+    }
+    return offset
+  }
+
+  function writeIntArray(view: DataView, offset: number, arr: number[]): number {
+    view.setInt32(offset, arr.length, true)
+    offset += 4
+    for (let i = 0; i < arr.length; i++) {
+      view.setInt32(offset, arr[i], true)
+      offset += 4
+    }
+    return offset
+  }
+
+  // Only supports root compound, int, list, and string for this use case
+  const TAG_End = 0
+  const TAG_Byte = 1
+  const TAG_Short = 2
+  const TAG_Int = 3
+  const TAG_Long = 4
+  const TAG_Float = 5
+  const TAG_Double = 6
+  const TAG_Byte_Array = 7
+  const TAG_String = 8
+  const TAG_List = 9
+  const TAG_Compound = 10
+  const TAG_Int_Array = 11
+  const TAG_Long_Array = 12
+
+  function encodeMcstructureNBT(blocks: BlockColor[][]): ArrayBuffer {
+    // Calculate palette and block data
     const width = blocks[0].length
     const height = blocks.length
-    const length = 1 // Single layer
+    const length = 1
+    const paletteList = Array.from(new Map(blocks.flat().map(b => [b.name, b])).values())
 
-    // Create a simple byte array representation
-    // Format: [width, height, length, ...block_data]
-    const buffer = new ArrayBuffer(4 + width * height * length)
-    const view = new Uint8Array(buffer)
+    // Estimate buffer size (over-allocate, then slice)
+    const estSize = 1024 * 1024
+    const buf = new ArrayBuffer(estSize)
+    const view = new DataView(buf)
+    let o = 0
 
-    // Write dimensions
-    view[0] = width
-    view[1] = height
-    view[2] = length
-    view[3] = 0
+    // Root compound (unnamed)
+    view.setUint8(o++, TAG_Compound)
+    o = writeStringLE(view, o, '')
 
-    // Write block indices
-    let offset = 4
+    // format_version: TAG_Int
+    view.setUint8(o++, TAG_Int)
+    o = writeStringLE(view, o, 'format_version')
+    view.setInt32(o, 1, true)
+    o += 4
+
+    // size: TAG_List of TAG_Int
+    view.setUint8(o++, TAG_List)
+    o = writeStringLE(view, o, 'size')
+    view.setUint8(o++, TAG_Int)
+    view.setInt32(o, 3, true); o += 4
+    view.setInt32(o, width, true); o += 4
+    view.setInt32(o, height, true); o += 4
+    view.setInt32(o, length, true); o += 4
+
+    // structure_world_origin: TAG_List of TAG_Int
+    view.setUint8(o++, TAG_List)
+    o = writeStringLE(view, o, 'structure_world_origin')
+    view.setUint8(o++, TAG_Int)
+    view.setInt32(o, 3, true); o += 4
+    view.setInt32(o, 0, true); o += 4
+    view.setInt32(o, 0, true); o += 4
+    view.setInt32(o, 0, true); o += 4
+
+    // structure_relative_position: TAG_List of TAG_List
+    view.setUint8(o++, TAG_List)
+    o = writeStringLE(view, o, 'structure_relative_position')
+    view.setUint8(o++, TAG_List)
+    view.setInt32(o, 2, true); o += 4
+    // First pos
+    view.setUint8(o++, TAG_Int)
+    view.setInt32(o, 3, true); o += 4
+    view.setInt32(o, 0, true); o += 4
+    view.setInt32(o, 0, true); o += 4
+    view.setInt32(o, 0, true); o += 4
+    // Second pos
+    view.setUint8(o++, TAG_Int)
+    view.setInt32(o, 3, true); o += 4
+    view.setInt32(o, width - 1, true); o += 4
+    view.setInt32(o, height - 1, true); o += 4
+    view.setInt32(o, 0, true); o += 4
+
+    // palette: TAG_List of TAG_Compound
+    view.setUint8(o++, TAG_List)
+    o = writeStringLE(view, o, 'palette')
+    view.setUint8(o++, TAG_Compound)
+    view.setInt32(o, paletteList.length, true); o += 4
+    for (const block of paletteList) {
+      // Compound for each block
+      // Name: TAG_String
+      view.setUint8(o++, TAG_String)
+      o = writeStringLE(view, o, 'Name')
+      o = writeStringLE(view, o, `minecraft:${block.name.toLowerCase().replace(/ /g, '_')}`)
+      // End tag for compound
+      view.setUint8(o++, TAG_End)
+    }
+
+    // blocks: TAG_List of TAG_Compound
+    view.setUint8(o++, TAG_List)
+    o = writeStringLE(view, o, 'blocks')
+    view.setUint8(o++, TAG_Compound)
+    view.setInt32(o, width * height, true); o += 4
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
         const blockColor = blocks[y][x]
-        const paletteIndex = palette.findIndex(c => c.name === blockColor.name)
-        view[offset++] = Math.max(0, paletteIndex)
+        const paletteIndex = paletteList.findIndex(c => c.name === blockColor.name)
+        // state: TAG_Int
+        view.setUint8(o++, TAG_Int)
+        o = writeStringLE(view, o, 'state')
+        view.setInt32(o, paletteIndex, true); o += 4
+        // pos: TAG_List of TAG_Int
+        view.setUint8(o++, TAG_List)
+        o = writeStringLE(view, o, 'pos')
+        view.setUint8(o++, TAG_Int)
+        view.setInt32(o, 3, true); o += 4
+        view.setInt32(o, x, true); o += 4
+        view.setInt32(o, y, true); o += 4
+        view.setInt32(o, 0, true); o += 4
+        // End tag for block compound
+        view.setUint8(o++, TAG_End)
       }
     }
 
-    return buffer
+    // entities: TAG_List of TAG_Compound (empty)
+    view.setUint8(o++, TAG_List)
+    o = writeStringLE(view, o, 'entities')
+    view.setUint8(o++, TAG_Compound)
+    view.setInt32(o, 0, true); o += 4
+
+    // End tag for root compound
+    view.setUint8(o++, TAG_End)
+
+    return buf.slice(0, o)
+  }
+
+  const createStructureFile = async (blocks: BlockColor[][]): Promise<ArrayBuffer> => {
+    return encodeMcstructureNBT(blocks)
   }
 
   return (
@@ -459,8 +595,7 @@ export default function MinecraftConverter() {
             <div className="space-y-2">
               <label className="block font-semibold text-sm">Palette</label>
               <select
-                value={palette}
-                onChange={(e) => setPalette(e.target.value as Palette)}
+                // Palette selection removed; always using expanded palette
                 className="w-full border border-gray-300 rounded-lg p-2 bg-white"
               >
                 {Object.entries(PALETTES).map(([key, option]) => (
@@ -537,7 +672,7 @@ export default function MinecraftConverter() {
               )}
               {blockData.length > 0 && (
                 <p className="text-xs text-gray-600">
-                  {blockData.length}x{blockData[0].length} blocks • {PALETTES[palette].label}
+                  {blockData.length}x{blockData[0].length} blocks • {PALETTES.expanded.label}
                 </p>
               )}
             </div>

@@ -9,8 +9,10 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "buffer": "^6.0.3",
     "jszip": "^3.10.1",
     "next": "^16.1.6",
+    "prismarine-nbt": "^2.8.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

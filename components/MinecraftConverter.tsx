@@ -130,6 +130,44 @@ export default function MinecraftConverter() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [image, setImage] = useState<HTMLImageElement | null>(null)
   const [imageState, setImageState] = useState({ x: 0, y: 0, scale: 1 })
+  const [lastTouchDistance, setLastTouchDistance] = useState<number | null>(null)
+  const zoomLevels = Array.from({ length: 56 }, (_, i) => 25 + i * 5) // 25% to 300% in 5% increments
+  const handleZoomDropdown = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const percent = parseInt(e.target.value, 10)
+    setImageState({
+      ...imageState,
+      scale: percent / 100,
+    })
+  }
+  // Mobile: pinch-to-zoom
+  const handleCanvasTouchMove = (e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+      // Pinch
+      const dx = e.touches[0].clientX - e.touches[1].clientX
+      const dy = e.touches[0].clientY - e.touches[1].clientY
+      const dist = Math.sqrt(dx * dx + dy * dy)
+      if (lastTouchDistance !== null) {
+        const scaleChange = dist / lastTouchDistance
+        setImageState(prev => {
+          const newScale = Math.max(0.5, Math.min(3, prev.scale * scaleChange))
+          return { ...prev, scale: newScale }
+        })
+      }
+      setLastTouchDistance(dist)
+    } else if (isDragging && e.touches.length === 1 && image) {
+      // Drag
+      const touch = e.touches[0]
+      setImageState({
+        ...imageState,
+        x: touch.clientX - dragStart.x,
+        y: touch.clientY - dragStart.y,
+      })
+    }
+  }
+  const handleCanvasTouchEnd = (e: React.TouchEvent) => {
+    setIsDragging(false)
+    setLastTouchDistance(null)
+  }
   const [isDragging, setIsDragging] = useState(false)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
   const [size, setSize] = useState<Size>('medium')
@@ -287,7 +325,7 @@ export default function MinecraftConverter() {
     setBlockData(blocks)
   }
 
-  // Auto-convert when image, size, or palette changes
+  // Auto-convert when image, size, zoom, or position changes
   useEffect(() => {
     if (image) {
       // Small delay to ensure canvas is rendered with the image
@@ -296,7 +334,7 @@ export default function MinecraftConverter() {
       }, 0)
       return () => clearTimeout(timer)
     }
-  }, [size, image])
+  }, [size, image, imageState.scale, imageState.x, imageState.y])
 
   const handleSave = async () => {
     if (blockData.length === 0) return
@@ -417,11 +455,26 @@ export default function MinecraftConverter() {
   const TAG_Compound = 10
 
   function encodeMcstructureNBT(blocks: BlockColor[][]): ArrayBuffer {
-    // Calculate palette and block data
+    // Bedrock .mcstructure NBT format (block_indices as list of lists, matching valid.json)
     const width = blocks[0].length
     const height = blocks.length
     const length = 1
-    const paletteList = Array.from(new Map(blocks.flat().map(b => [b.name, b])).values())
+    function toBedrockBlockName(name: string) {
+      return name.trim().toLowerCase().replace(/ /g, '_')
+    }
+    const validBedrockBlocks = new Set([
+      'white_concrete','light_gray_concrete','gray_concrete','black_concrete','red_concrete','orange_concrete','yellow_concrete','lime_concrete','green_concrete','cyan_concrete','light_blue_concrete','blue_concrete','purple_concrete','magenta_concrete','pink_concrete','brown_concrete',
+      'white_terracotta','light_gray_terracotta','gray_terracotta','black_terracotta','red_terracotta','orange_terracotta','yellow_terracotta','lime_terracotta','green_terracotta','cyan_terracotta','light_blue_terracotta','blue_terracotta','purple_terracotta','magenta_terracotta','pink_terracotta','brown_terracotta',
+    ])
+    // Palette is always constructed from unique block names in pixel art
+    const paletteList = Array.from(
+      new Map(
+        blocks.flat()
+          .map(b => ({...b, bedrockName: toBedrockBlockName(b.name)}))
+          .map(b => [b.bedrockName, b])
+      ).values()
+    )
+    console.log('Palette constructed:', paletteList.map(b => b.bedrockName))
 
     // Estimate buffer size (over-allocate, then slice)
     const estSize = 1024 * 1024
@@ -439,7 +492,7 @@ export default function MinecraftConverter() {
     view.setInt32(o, 1, true)
     o += 4
 
-    // size: TAG_List of TAG_Int
+    // size: TAG_List of TAG_Int [x, y, z]
     view.setUint8(o++, TAG_List)
     o = writeStringLE(view, o, 'size')
     view.setUint8(o++, TAG_Int)
@@ -448,79 +501,53 @@ export default function MinecraftConverter() {
     view.setInt32(o, height, true); o += 4
     view.setInt32(o, length, true); o += 4
 
-    // structure_world_origin: TAG_List of TAG_Int
-    view.setUint8(o++, TAG_List)
-    o = writeStringLE(view, o, 'structure_world_origin')
-    view.setUint8(o++, TAG_Int)
-    view.setInt32(o, 3, true); o += 4
-    view.setInt32(o, 0, true); o += 4
-    view.setInt32(o, 0, true); o += 4
-    view.setInt32(o, 0, true); o += 4
+    // structure: TAG_Compound (named, direct child)
+    view.setUint8(o++, TAG_Compound)
+    o = writeStringLE(view, o, 'structure')
 
-    // structure_relative_position: TAG_List of TAG_List
+    // block_indices: TAG_List of TAG_List of TAG_Int (row-major order, each inner list is width, outer is height)
     view.setUint8(o++, TAG_List)
-    o = writeStringLE(view, o, 'structure_relative_position')
-    view.setUint8(o++, TAG_List)
-    view.setInt32(o, 2, true); o += 4
-    // First pos
-    view.setUint8(o++, TAG_Int)
-    view.setInt32(o, 3, true); o += 4
-    view.setInt32(o, 0, true); o += 4
-    view.setInt32(o, 0, true); o += 4
-    view.setInt32(o, 0, true); o += 4
-    // Second pos
-    view.setUint8(o++, TAG_Int)
-    view.setInt32(o, 3, true); o += 4
-    view.setInt32(o, width - 1, true); o += 4
-    view.setInt32(o, height - 1, true); o += 4
-    view.setInt32(o, 0, true); o += 4
+    o = writeStringLE(view, o, 'block_indices')
+    view.setUint8(o++, TAG_List) // Each row is a list of ints
+    view.setInt32(o, height, true); o += 4
+    for (let y = 0; y < height; y++) {
+      view.setUint8(o++, TAG_Int)
+      view.setInt32(o, width, true); o += 4
+      for (let x = 0; x < width; x++) {
+        const blockColor = blocks[y][x]
+        const bedrockName = toBedrockBlockName(blockColor.name)
+        let paletteIndex = paletteList.findIndex(c => c.bedrockName === bedrockName)
+        if (paletteIndex === -1) {
+          console.error(`Block name '${bedrockName}' not found in palette. BlockColor:`, blockColor)
+          console.error('Current palette:', paletteList.map(c => c.bedrockName))
+          throw new Error(`Block name '${bedrockName}' not found in palette. This should never happen.`)
+        }
+        console.log(`Block (${x},${y}): '${bedrockName}' -> palette index ${paletteIndex}`)
+        view.setInt32(o, paletteIndex, true); o += 4
+      }
+    }
 
-    // palette: TAG_List of TAG_Compound
+    // palette: TAG_List of TAG_Compound (with 'Name' capitalized, and correct structure)
     view.setUint8(o++, TAG_List)
     o = writeStringLE(view, o, 'palette')
     view.setUint8(o++, TAG_Compound)
     view.setInt32(o, paletteList.length, true); o += 4
     for (const block of paletteList) {
       // Compound for each block
-      // Name: TAG_String
+      // 'name': TAG_String (lowercase, as in valid.json)
       view.setUint8(o++, TAG_String)
-      o = writeStringLE(view, o, 'Name')
-      o = writeStringLE(view, o, `minecraft:${block.name.toLowerCase().replace(/ /g, '_')}`)
-      // End tag for compound
+      o = writeStringLE(view, o, 'name')
+      o = writeStringLE(view, o, `minecraft:${block.bedrockName}`)
+      // 'states': TAG_Compound (empty, but required by Bedrock)
+      view.setUint8(o++, TAG_Compound)
+      o = writeStringLE(view, o, 'states')
+      view.setUint8(o++, TAG_End)
+      // End tag for block compound
       view.setUint8(o++, TAG_End)
     }
 
-    // blocks: TAG_List of TAG_Compound
-    view.setUint8(o++, TAG_List)
-    o = writeStringLE(view, o, 'blocks')
-    view.setUint8(o++, TAG_Compound)
-    view.setInt32(o, width * height, true); o += 4
-    for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width; x++) {
-        const blockColor = blocks[y][x]
-        const paletteIndex = paletteList.findIndex(c => c.name === blockColor.name)
-        // state: TAG_Int
-        view.setUint8(o++, TAG_Int)
-        o = writeStringLE(view, o, 'state')
-        view.setInt32(o, paletteIndex, true); o += 4
-        // pos: TAG_List of TAG_Int
-        view.setUint8(o++, TAG_List)
-        o = writeStringLE(view, o, 'pos')
-        view.setUint8(o++, TAG_Int)
-        view.setInt32(o, 3, true); o += 4
-        view.setInt32(o, x, true); o += 4
-        view.setInt32(o, y, true); o += 4
-        view.setInt32(o, 0, true); o += 4
-        // End tag for block compound
-        view.setUint8(o++, TAG_End)
-      }
-    }
-
-    // entities: TAG_List of TAG_Compound (empty)
-    view.setUint8(o++, TAG_List)
-    o = writeStringLE(view, o, 'entities')
-    view.setUint8(o++, TAG_Compound)
-    view.setInt32(o, 0, true); o += 4
+    // End tag for structure compound (named)
+    view.setUint8(o++, TAG_End)
 
     // End tag for root compound
     view.setUint8(o++, TAG_End)
@@ -535,7 +562,7 @@ export default function MinecraftConverter() {
   return (
     <div className="flex flex-col gap-6 p-4 max-w-4xl mx-auto">
       <div className="space-y-2">
-        <h1 className="text-3xl font-bold text-center">Minecraft Photo Converter</h1>
+        <h1 className="text-3xl font-bold text-center">Minecraft Photo Thing</h1>
         <p className="text-center text-gray-600">Convert your photo to a Minecraft pixel art schematic</p>
       </div>
 
@@ -605,27 +632,30 @@ export default function MinecraftConverter() {
                   onMouseUp={handleMouseUp}
                   onMouseLeave={handleMouseUp}
                   onTouchStart={handleCanvasTouchStart}
-                  onTouchMove={handleTouchMove}
-                  onTouchEnd={handleMouseUp}
+                  onTouchMove={handleCanvasTouchMove}
+                  onTouchEnd={handleCanvasTouchEnd}
                   className="border-4 border-gray-300 rounded-lg cursor-move touch-none bg-white"
                   style={{ maxWidth: '100%', height: 'auto', maxHeight: '400px' }}
                 />
               </div>
 
               {/* Controls */}
-              <div className="grid grid-cols-3 gap-2">
-                <button
-                  onClick={() => handleZoom('in')}
-                  className="bg-gray-200 hover:bg-gray-300 font-semibold py-2 px-2 rounded transition text-xs"
-                >
-                  Zoom In
-                </button>
-                <button
-                  onClick={() => handleZoom('out')}
-                  className="bg-gray-200 hover:bg-gray-300 font-semibold py-2 px-2 rounded transition text-xs"
-                >
-                  Zoom Out
-                </button>
+              <div className="flex gap-2 items-center">
+                {/* Desktop: Zoom dropdown */}
+                <div className="hidden sm:block">
+                  <label className="mr-2 text-xs font-semibold">Zoom</label>
+                  <select
+                    value={Math.round(imageState.scale * 100)}
+                    onChange={handleZoomDropdown}
+                    className="border border-gray-300 rounded p-1 text-xs"
+                  >
+                    {zoomLevels.map(z => (
+                      <option key={z} value={z}>{z}%</option>
+                    ))}
+                  </select>
+                </div>
+                {/* Mobile: Pinch-to-zoom hint */}
+                <div className="block sm:hidden text-xs text-gray-500">Pinch to zoom</div>
                 <button
                   onClick={handleFitSquare}
                   className="bg-gray-200 hover:bg-gray-300 font-semibold py-2 px-2 rounded transition text-xs"

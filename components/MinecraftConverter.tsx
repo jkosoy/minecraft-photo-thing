@@ -164,7 +164,7 @@ export default function MinecraftConverter() {
       })
     }
   }
-  const handleCanvasTouchEnd = (e: React.TouchEvent) => {
+  const handleCanvasTouchEnd = () => {
     setIsDragging(false)
     setLastTouchDistance(null)
   }
@@ -265,7 +265,7 @@ export default function MinecraftConverter() {
     })
   }
 
-  const handleTouchMove = (e: React.TouchEvent) => {
+  // Removed unused handleTouchMove function
     if (!isDragging || !image) return
     const touch = e.touches[0]
     setImageState({
@@ -279,7 +279,7 @@ export default function MinecraftConverter() {
     setIsDragging(false)
   }
 
-  const handleZoom = (direction: 'in' | 'out') => {
+  // Removed unused handleZoom function
     const zoomFactor = direction === 'in' ? 1.1 : 0.9
     setImageState({
       ...imageState,
@@ -462,10 +462,7 @@ export default function MinecraftConverter() {
     function toBedrockBlockName(name: string) {
       return name.trim().toLowerCase().replace(/ /g, '_')
     }
-    const validBedrockBlocks = new Set([
-      'white_concrete','light_gray_concrete','gray_concrete','black_concrete','red_concrete','orange_concrete','yellow_concrete','lime_concrete','green_concrete','cyan_concrete','light_blue_concrete','blue_concrete','purple_concrete','magenta_concrete','pink_concrete','brown_concrete',
-      'white_terracotta','light_gray_terracotta','gray_terracotta','black_terracotta','red_terracotta','orange_terracotta','yellow_terracotta','lime_terracotta','green_terracotta','cyan_terracotta','light_blue_terracotta','blue_terracotta','purple_terracotta','magenta_terracotta','pink_terracotta','brown_terracotta',
-    ])
+    // Removed unused validBedrockBlocks
     // Palette is always constructed from unique block names in pixel art
     const paletteList = Array.from(
       new Map(

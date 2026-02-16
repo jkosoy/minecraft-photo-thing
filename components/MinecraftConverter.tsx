@@ -335,7 +335,7 @@ export default function MinecraftConverter() {
 
     // Create structure file in filename/structures/filename/filename.mcstructure
     const structureData = await createStructureFile(blockData)
-    zip.folder(`${packName}/structures/${packName}`)!.file(`${packName}.mcstructure`, structureData)
+    zip.folder(`structures/${packName}`)!.file(`${packName}.mcstructure`, structureData)
 
     // Create and add icon from preview
     const iconBlob = await generateIconFromPreview()

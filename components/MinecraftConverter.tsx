@@ -334,7 +334,7 @@ export default function MinecraftConverter() {
     zip.file('manifest.json', JSON.stringify(manifest, null, 2))
 
     // Create function file that generates the pixel art
-    const functionContent = createFunctionFile(blockData)
+    const functionContent = createFunctionFile(blockData, packName)
     zip.folder('functions')!.file(`${packName}.mcfunction`, functionContent)
 
     // Create and add icon from preview
@@ -402,7 +402,7 @@ export default function MinecraftConverter() {
 
   // Generate .mcfunction file content for Bedrock Edition
   // Creates setblock commands to place blocks in a grid pattern
-  function createFunctionFile(blocks: BlockColor[][]): string {
+  function createFunctionFile(blocks: BlockColor[][], packName: string): string {
     const commands: string[] = []
     
     // Helper function to convert block name to Bedrock format
@@ -618,7 +618,7 @@ export default function MinecraftConverter() {
             <p><strong>Step 2:</strong> Choose a size and palette for your Minecraft blocks</p>
             <p><strong>Step 3:</strong> Watch the preview update automatically</p>
             <p><strong>Step 4:</strong> Click "Save as .mcpack" to download the behavior pack</p>
-            <p><strong>Step 5:</strong> Import the .mcpack into Minecraft Bedrock and run the function with: <code>/function {packName}</code></p>
+            <p><strong>Step 5:</strong> Import the .mcpack into Minecraft Bedrock and run the function with: <code>/function {`<pack-name>`}</code></p>
           </div>
         </>
       )}

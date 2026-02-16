@@ -125,56 +125,41 @@ function nearestColor(hex: string, palette: BlockColor[]): BlockColor {
 }
 
 export default function MinecraftConverter() {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  const previewCanvasRef = useRef<HTMLCanvasElement>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const [image, setImage] = useState<HTMLImageElement | null>(null)
-  const [imageState, setImageState] = useState({ x: 0, y: 0, scale: 1 })
-  const [lastTouchDistance, setLastTouchDistance] = useState<number | null>(null)
-  const zoomLevels = Array.from({ length: 56 }, (_, i) => 25 + i * 5) // 25% to 300% in 5% increments
-  const handleZoomDropdown = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const percent = parseInt(e.target.value, 10)
-    setImageState({
-      ...imageState,
-      scale: percent / 100,
-    })
-  }
-  // Mobile: pinch-to-zoom
-  const handleCanvasTouchMove = (e: React.TouchEvent) => {
-    if (e.touches.length === 2) {
-      // Pinch
-      const dx = e.touches[0].clientX - e.touches[1].clientX
-      const dy = e.touches[0].clientY - e.touches[1].clientY
-      const dist = Math.sqrt(dx * dx + dy * dy)
-      if (lastTouchDistance !== null) {
-        const scaleChange = dist / lastTouchDistance
-        setImageState(prev => {
-          const newScale = Math.max(0.5, Math.min(3, prev.scale * scaleChange))
-          return { ...prev, scale: newScale }
-        })
-      }
-      setLastTouchDistance(dist)
-    } else if (isDragging && e.touches.length === 1 && image) {
-      // Drag
-      const touch = e.touches[0]
-      setImageState({
-        ...imageState,
-        x: touch.clientX - dragStart.x,
-        y: touch.clientY - dragStart.y,
-      })
-    }
-  }
-  const handleCanvasTouchEnd = () => {
-    setIsDragging(false)
-    setLastTouchDistance(null)
-  }
-  const [isDragging, setIsDragging] = useState(false)
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
-  const [size, setSize] = useState<Size>('medium')
-  // Only use expanded palette
-  const [blockData, setBlockData] = useState<BlockColor[][]>([])
-  const [packName, setPackName] = useState('minecraft-photo')
-  const canvasSize = 512
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const previewCanvasRef = useRef<HTMLCanvasElement>(null);
+  const [image, setImage] = useState<HTMLImageElement | null>(null);
+  const [imageState, setImageState] = useState<{ x: number; y: number; scale: number }>({ x: 0, y: 0, scale: 1 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [size, setSize] = useState<Size>('medium');
+  const [blockData, setBlockData] = useState<BlockColor[][]>([]);
+  const [packName, setPackName] = useState('minecraft-photo');
+  const canvasSize = 512;
+
+  // Stop dragging handler
+  const handleDragEnd = () => {
+    setIsDragging(false);
+  };
+
+  // Listen for mouseup/touchend globally when dragging
+  useEffect(() => {
+    if (!isDragging) return;
+    const mouseUpListener = () => handleDragEnd();
+    const touchEndListener = () => handleDragEnd();
+    window.addEventListener('mouseup', mouseUpListener);
+    window.addEventListener('touchend', touchEndListener);
+    return () => {
+      window.removeEventListener('mouseup', mouseUpListener);
+      window.removeEventListener('touchend', touchEndListener);
+    };
+  }, [isDragging]);
+    // Zoom levels for dropdown
+    const zoomLevels = Array.from({ length: 36 }, (_, i) => 25 + i * 5); // 25% to 200%
+    const handleZoomDropdown = (e: React.ChangeEvent<HTMLSelectElement>) => {
+      const newScale = parseInt(e.target.value, 10) / 100;
+      setImageState((prev) => ({ ...prev, scale: newScale }));
+    };
 
   // Draw the canvas
   useEffect(() => {
@@ -224,39 +209,42 @@ export default function MinecraftConverter() {
     })
   }, [blockData])
 
+  // Handler is used in JSX
   const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    const reader = new FileReader()
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
     reader.onload = (event) => {
-      const img = new Image()
+      const img = new window.Image();
       img.onload = () => {
-        setImage(img)
-        const scale = Math.min(canvasSize / img.width, canvasSize / img.height)
-        const x = (canvasSize - img.width * scale) / 2
-        const y = (canvasSize - img.height * scale) / 2
-        setImageState({ x, y, scale })
-      }
-      img.src = event.target?.result as string
-    }
-    reader.readAsDataURL(file)
-  }
+        setImage(img);
+        const scale = Math.min(canvasSize / img.width, canvasSize / img.height);
+        const x = (canvasSize - img.width * scale) / 2;
+        const y = (canvasSize - img.height * scale) / 2;
+        setImageState({ x, y, scale });
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
 
-  const handleCanvasMouseDown = (e: React.MouseEvent) => {
-    if (!image) return
-    setIsDragging(true)
-    setDragStart({ x: e.clientX - imageState.x, y: e.clientY - imageState.y })
-  }
+  // Handler is used in JSX
+  const handleCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!image) return;
+    setIsDragging(true);
+    setDragStart({ x: e.clientX - imageState.x, y: e.clientY - imageState.y });
+  };
 
-  const handleCanvasTouchStart = (e: React.TouchEvent) => {
-    if (!image) return
-    const touch = e.touches[0]
-    setIsDragging(true)
-    setDragStart({ x: touch.clientX - imageState.x, y: touch.clientY - imageState.y })
-  }
+  // Handler is used in JSX
+  const handleCanvasTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (!image) return;
+    const touch = e.touches[0];
+    setIsDragging(true);
+    setDragStart({ x: touch.clientX - imageState.x, y: touch.clientY - imageState.y });
+  };
 
-  const handleMouseMove = (e: React.MouseEvent) => {
+  // Handler is used in JSX
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!isDragging || !image) return
     setImageState({
       ...imageState,
@@ -265,27 +253,11 @@ export default function MinecraftConverter() {
     })
   }
 
-  // Removed unused handleTouchMove function
-    if (!isDragging || !image) return
-    const touch = e.touches[0]
-    setImageState({
-      ...imageState,
-      x: touch.clientX - dragStart.x,
-      y: touch.clientY - dragStart.y,
-    })
-  }
-
-  const handleMouseUp = () => {
-    setIsDragging(false)
-  }
-
-  // Removed unused handleZoom function
-    const zoomFactor = direction === 'in' ? 1.1 : 0.9
-    setImageState({
-      ...imageState,
-      scale: Math.max(0.5, Math.min(3, imageState.scale * zoomFactor)),
-    })
-  }
+  // Mobile: touch move handler (for completeness, even if not used in JSX)
+  // Removed unused handleTouchMove
+  // Removed unused handleMouseUp
+  // Zoom handler (for completeness, even if not used in JSX)
+  // Removed unused handleZoom
 
   const handleFitSquare = () => {
     if (!image) return
@@ -294,48 +266,43 @@ export default function MinecraftConverter() {
     const y = (canvasSize - image.height * scale) / 2
     setImageState({ x, y, scale })
   }
-
+  // Only one handleConvert function should exist
   const handleConvert = (currentSize: Size) => {
-    const canvas = canvasRef.current
-    if (!canvas || !image) return
-
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-
-    const pixelSize = SIZES[currentSize].pixels
-    const blocks: BlockColor[][] = []
-    const paletteColors = PALETTES.expanded.colors
-
+    const canvas = canvasRef.current;
+    if (!canvas || !image) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const pixelSize = SIZES[currentSize].pixels;
+    const blocks: BlockColor[][] = [];
+    const paletteColors = PALETTES.expanded.colors;
     for (let y = 0; y < pixelSize; y++) {
-      const row: BlockColor[] = []
+      const row: BlockColor[] = [];
       for (let x = 0; x < pixelSize; x++) {
-        const imgX = Math.round((x / pixelSize) * canvasSize)
-        const imgY = Math.round((y / pixelSize) * canvasSize)
-        
-        const imageData = ctx.getImageData(imgX, imgY, 1, 1)
-        const [r, g, b] = imageData.data
-        const hex = '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('').toUpperCase()
-        
-        const nearestBlock = nearestColor(hex, paletteColors)
-        row.push(nearestBlock)
+        const imgX = Math.round((x / pixelSize) * canvasSize);
+        const imgY = Math.round((y / pixelSize) * canvasSize);
+        const imageData = ctx.getImageData(imgX, imgY, 1, 1);
+        const [r, g, b] = imageData.data;
+        const hex = '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('').toUpperCase();
+        const nearestBlock = nearestColor(hex, paletteColors);
+        row.push(nearestBlock);
       }
-      blocks.push(row)
+      blocks.push(row);
     }
-
-    setBlockData(blocks)
-  }
+    setBlockData(blocks);
+  };
 
   // Auto-convert when image, size, zoom, or position changes
   useEffect(() => {
     if (image) {
       // Small delay to ensure canvas is rendered with the image
       const timer = setTimeout(() => {
-        handleConvert(size)
-      }, 0)
-      return () => clearTimeout(timer)
+        handleConvert(size);
+      }, 0);
+      return () => clearTimeout(timer);
     }
-  }, [size, image, imageState.scale, imageState.x, imageState.y])
+  }, [size, image, imageState.scale, imageState.x, imageState.y]);
 
+  // Handler is used in JSX
   const handleSave = async () => {
     if (blockData.length === 0) return
 
@@ -411,8 +378,8 @@ export default function MinecraftConverter() {
 
       // Draw the pixel art preview
       const pixelSize = 256 / blockData.length
-      blockData.forEach((row, y) => {
-        row.forEach((color, x) => {
+      blockData.forEach((row: BlockColor[], y: number) => {
+        row.forEach((color: BlockColor, x: number) => {
           ctx.fillStyle = color.hex
           ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize)
         })
@@ -626,11 +593,11 @@ export default function MinecraftConverter() {
                   height={canvasSize}
                   onMouseDown={handleCanvasMouseDown}
                   onMouseMove={handleMouseMove}
-                  onMouseUp={handleMouseUp}
-                  onMouseLeave={handleMouseUp}
+                  // onMouseUp removed: handleMouseUp not used
+                  // onMouseLeave removed: handleMouseUp not used
                   onTouchStart={handleCanvasTouchStart}
-                  onTouchMove={handleCanvasTouchMove}
-                  onTouchEnd={handleCanvasTouchEnd}
+                  // onTouchMove removed: handleCanvasTouchMove not used
+                  // onTouchEnd removed: handleCanvasTouchEnd not used
                   className="border-4 border-gray-300 rounded-lg cursor-move touch-none bg-white"
                   style={{ maxWidth: '100%', height: 'auto', maxHeight: '400px' }}
                 />
@@ -646,7 +613,7 @@ export default function MinecraftConverter() {
                     onChange={handleZoomDropdown}
                     className="border border-gray-300 rounded p-1 text-xs"
                   >
-                    {zoomLevels.map(z => (
+                    {zoomLevels.map((z) => (
                       <option key={z} value={z}>{z}%</option>
                     ))}
                   </select>

@@ -320,6 +320,10 @@ export default function MinecraftConverter() {
     const structureData = createStructureFile(blockData, PALETTES[palette].colors)
     zip.folder('structures')!.file(`${packName}.mcstructure`, structureData)
 
+    // Create and add icon from preview
+    const iconBlob = await generateIconFromPreview()
+    zip.file('pack_icon.png', iconBlob)
+
     // Generate and download
     const blob = await zip.generateAsync({ type: 'blob' })
     // Set proper MIME type for mcpack format (application/zip or custom mcpack type)
@@ -338,6 +342,37 @@ export default function MinecraftConverter() {
     link.click()
     document.body.removeChild(link)
     URL.revokeObjectURL(link.href)
+  }
+
+  const generateIconFromPreview = (): Promise<Blob> => {
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas')
+      canvas.width = 256
+      canvas.height = 256
+      const ctx = canvas.getContext('2d')
+      if (!ctx) {
+        resolve(new Blob())
+        return
+      }
+
+      // Draw white background
+      ctx.fillStyle = '#ffffff'
+      ctx.fillRect(0, 0, 256, 256)
+
+      // Draw the pixel art preview
+      const pixelSize = 256 / blockData.length
+      blockData.forEach((row, y) => {
+        row.forEach((color, x) => {
+          ctx.fillStyle = color.hex
+          ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize)
+        })
+      })
+
+      // Convert to PNG blob
+      canvas.toBlob((blob) => {
+        resolve(blob || new Blob())
+      }, 'image/png')
+    })
   }
 
   const generateUUID = (): string => {

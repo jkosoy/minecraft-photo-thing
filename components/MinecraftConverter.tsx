@@ -618,7 +618,7 @@ export default function MinecraftConverter() {
             <p><strong>Step 2:</strong> Choose a size and palette for your Minecraft blocks</p>
             <p><strong>Step 3:</strong> Watch the preview update automatically</p>
             <p><strong>Step 4:</strong> Click "Save as .mcpack" to download the behavior pack</p>
-            <p><strong>Step 5:</strong> Import the .mcpack into Minecraft Bedrock and run the function with: <code>/function {`<pack-name>`}</code></p>
+            <p><strong>Step 5:</strong> Import the .mcpack into Minecraft Bedrock and run the function with: <code>/function &lt;pack-name&gt;</code></p>
           </div>
         </>
       )}

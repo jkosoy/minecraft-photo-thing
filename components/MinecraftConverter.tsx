@@ -322,10 +322,21 @@ export default function MinecraftConverter() {
 
     // Generate and download
     const blob = await zip.generateAsync({ type: 'blob' })
+    // Set proper MIME type for mcpack format (application/zip or custom mcpack type)
+    const mcpackBlob = new Blob([blob], { type: 'application/zip' })
     const link = document.createElement('a')
-    link.href = URL.createObjectURL(blob)
+    link.href = URL.createObjectURL(mcpackBlob)
     link.download = `${packName}.mcpack`
+    
+    // For iOS compatibility, we need to trigger the download differently
+    if (navigator.userAgent.includes('iPhone') || navigator.userAgent.includes('iPad')) {
+      // iOS approach: set the href and let the browser handle it
+      link.setAttribute('download', `${packName}.mcpack`)
+    }
+    
+    document.body.appendChild(link)
     link.click()
+    document.body.removeChild(link)
     URL.revokeObjectURL(link.href)
   }
 
@@ -507,7 +518,10 @@ export default function MinecraftConverter() {
                   <input
                     type="text"
                     value={packName}
-                    onChange={(e) => setPackName(e.target.value.replace(/[^a-z0-9-_]/g, ''))}
+                    onChange={(e) => {
+                      const newValue = e.target.value.toLowerCase().replace(/[^a-z0-9\-_]/g, '')
+                      setPackName(newValue)
+                    }}
                     placeholder="minecraft-photo"
                     className="w-full border border-gray-300 rounded-lg p-2 bg-white"
                   />

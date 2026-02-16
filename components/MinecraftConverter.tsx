@@ -408,30 +408,13 @@ export default function MinecraftConverter() {
     return offset
   }
 
-  function writeIntArray(view: DataView, offset: number, arr: number[]): number {
-    view.setInt32(offset, arr.length, true)
-    offset += 4
-    for (let i = 0; i < arr.length; i++) {
-      view.setInt32(offset, arr[i], true)
-      offset += 4
-    }
-    return offset
-  }
 
   // Only supports root compound, int, list, and string for this use case
   const TAG_End = 0
-  const TAG_Byte = 1
-  const TAG_Short = 2
   const TAG_Int = 3
-  const TAG_Long = 4
-  const TAG_Float = 5
-  const TAG_Double = 6
-  const TAG_Byte_Array = 7
   const TAG_String = 8
   const TAG_List = 9
   const TAG_Compound = 10
-  const TAG_Int_Array = 11
-  const TAG_Long_Array = 12
 
   function encodeMcstructureNBT(blocks: BlockColor[][]): ArrayBuffer {
     // Calculate palette and block data

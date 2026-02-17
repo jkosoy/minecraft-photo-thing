@@ -311,7 +311,7 @@ export default function MinecraftConverter() {
 
     const zip = new JSZip()
 
-    // Create manifest.json
+    // Create manifest.json for behavior pack
     const manifest = {
       format_version: 2,
       header: {
@@ -323,7 +323,7 @@ export default function MinecraftConverter() {
       },
       modules: [
         {
-          description: 'Structure templates',
+          description: 'Behavior pack with functions',
           type: 'data',
           uuid: generateUUID(),
           version: [1, 0, 0],
@@ -333,9 +333,9 @@ export default function MinecraftConverter() {
 
     zip.file('manifest.json', JSON.stringify(manifest, null, 2))
 
-    // Create structure file in filename/structures/filename/filename.mcstructure
-    const structureData = await createStructureFile(blockData)
-    zip.folder(`structures/${packName}`)!.file(`${packName}.mcstructure`, structureData)
+    // Create function file that generates the pixel art
+    const functionContent = createFunctionFile(blockData, packName)
+    zip.folder('functions')!.file(`${packName}.mcfunction`, functionContent)
 
     // Create and add icon from preview
     const iconBlob = await generateIconFromPreview()
@@ -400,127 +400,34 @@ export default function MinecraftConverter() {
     })
   }
 
-  // NBT encoder for .mcstructure using prismarine-nbt
-
-  // Pure JS NBT writer for minimal .mcstructure
-  // Only supports the subset needed for this use case
-  function writeStringLE(view: DataView, offset: number, str: string): number {
-    view.setUint16(offset, str.length, true)
-    offset += 2
-    for (let i = 0; i < str.length; i++) {
-      view.setUint8(offset++, str.charCodeAt(i))
-    }
-    return offset
-  }
-
-
-  // Only supports root compound, int, list, and string for this use case
-  const TAG_End = 0
-  const TAG_Int = 3
-  const TAG_String = 8
-  const TAG_List = 9
-  const TAG_Compound = 10
-
-  function encodeMcstructureNBT(blocks: BlockColor[][]): ArrayBuffer {
-    // Bedrock .mcstructure NBT format (block_indices as list of lists, matching valid.json)
-    const width = blocks[0].length
-    const height = blocks.length
-    const length = 1
-    function toBedrockBlockName(name: string) {
+  // Generate .mcfunction file content for Bedrock Edition
+  // Creates setblock commands to place blocks in a grid pattern
+  function createFunctionFile(blocks: BlockColor[][], packName: string): string {
+    const commands: string[] = []
+    
+    // Helper function to convert block name to Bedrock format
+    function toBedrockBlockName(name: string): string {
       return name.trim().toLowerCase().replace(/ /g, '_')
     }
-    // Removed unused validBedrockBlocks
-    // Palette is always constructed from unique block names in pixel art
-    const paletteList = Array.from(
-      new Map(
-        blocks.flat()
-          .map(b => ({...b, bedrockName: toBedrockBlockName(b.name)}))
-          .map(b => [b.bedrockName, b])
-      ).values()
-    )
-    console.log('Palette constructed:', paletteList.map(b => b.bedrockName))
-
-    // Estimate buffer size (over-allocate, then slice)
-    const estSize = 1024 * 1024
-    const buf = new ArrayBuffer(estSize)
-    const view = new DataView(buf)
-    let o = 0
-
-    // Root compound (unnamed)
-    view.setUint8(o++, TAG_Compound)
-    o = writeStringLE(view, o, '')
-
-    // format_version: TAG_Int
-    view.setUint8(o++, TAG_Int)
-    o = writeStringLE(view, o, 'format_version')
-    view.setInt32(o, 1, true)
-    o += 4
-
-    // size: TAG_List of TAG_Int [x, y, z]
-    view.setUint8(o++, TAG_List)
-    o = writeStringLE(view, o, 'size')
-    view.setUint8(o++, TAG_Int)
-    view.setInt32(o, 3, true); o += 4
-    view.setInt32(o, width, true); o += 4
-    view.setInt32(o, height, true); o += 4
-    view.setInt32(o, length, true); o += 4
-
-    // structure: TAG_Compound (named, direct child)
-    view.setUint8(o++, TAG_Compound)
-    o = writeStringLE(view, o, 'structure')
-
-    // block_indices: TAG_List of TAG_List of TAG_Int (row-major order, each inner list is width, outer is height)
-    view.setUint8(o++, TAG_List)
-    o = writeStringLE(view, o, 'block_indices')
-    view.setUint8(o++, TAG_List) // Each row is a list of ints
-    view.setInt32(o, height, true); o += 4
-    for (let y = 0; y < height; y++) {
-      view.setUint8(o++, TAG_Int)
-      view.setInt32(o, width, true); o += 4
-      for (let x = 0; x < width; x++) {
+    
+    // Add a comment header
+    commands.push(`# Minecraft Photo Thing: ${packName}`)
+    commands.push(`# Generated pixel art - ${blocks.length}x${blocks[0].length} blocks`)
+    commands.push('')
+    
+    // Generate setblock commands for each pixel
+    // Place blocks in a vertical wall pattern (x, y plane at z=0)
+    for (let y = 0; y < blocks.length; y++) {
+      for (let x = 0; x < blocks[y].length; x++) {
         const blockColor = blocks[y][x]
         const bedrockName = toBedrockBlockName(blockColor.name)
-        let paletteIndex = paletteList.findIndex(c => c.bedrockName === bedrockName)
-        if (paletteIndex === -1) {
-          console.error(`Block name '${bedrockName}' not found in palette. BlockColor:`, blockColor)
-          console.error('Current palette:', paletteList.map(c => c.bedrockName))
-          throw new Error(`Block name '${bedrockName}' not found in palette. This should never happen.`)
-        }
-        console.log(`Block (${x},${y}): '${bedrockName}' -> palette index ${paletteIndex}`)
-        view.setInt32(o, paletteIndex, true); o += 4
+        // Use ~ ~ ~ relative coordinates starting from where the command block is
+        // Build upward (positive y) and sideways (positive x)
+        commands.push(`setblock ~${x} ~${blocks.length - 1 - y} ~ ${bedrockName}`)
       }
     }
-
-    // palette: TAG_List of TAG_Compound (with 'Name' capitalized, and correct structure)
-    view.setUint8(o++, TAG_List)
-    o = writeStringLE(view, o, 'palette')
-    view.setUint8(o++, TAG_Compound)
-    view.setInt32(o, paletteList.length, true); o += 4
-    for (const block of paletteList) {
-      // Compound for each block
-      // 'name': TAG_String (lowercase, as in valid.json)
-      view.setUint8(o++, TAG_String)
-      o = writeStringLE(view, o, 'name')
-      o = writeStringLE(view, o, `minecraft:${block.bedrockName}`)
-      // 'states': TAG_Compound (empty, but required by Bedrock)
-      view.setUint8(o++, TAG_Compound)
-      o = writeStringLE(view, o, 'states')
-      view.setUint8(o++, TAG_End)
-      // End tag for block compound
-      view.setUint8(o++, TAG_End)
-    }
-
-    // End tag for structure compound (named)
-    view.setUint8(o++, TAG_End)
-
-    // End tag for root compound
-    view.setUint8(o++, TAG_End)
-
-    return buf.slice(0, o)
-  }
-
-  const createStructureFile = async (blocks: BlockColor[][]): Promise<ArrayBuffer> => {
-    return encodeMcstructureNBT(blocks)
+    
+    return commands.join('\n')
   }
 
   return (
@@ -710,7 +617,8 @@ export default function MinecraftConverter() {
             <p><strong>Step 1:</strong> Position your photo using drag and zoom controls</p>
             <p><strong>Step 2:</strong> Choose a size and palette for your Minecraft blocks</p>
             <p><strong>Step 3:</strong> Watch the preview update automatically</p>
-            <p><strong>Step 4:</strong> Click "Save as JSON" to download the schematic data</p>
+            <p><strong>Step 4:</strong> Click "Save as .mcpack" to download the behavior pack</p>
+            <p><strong>Step 5:</strong> Import the .mcpack into Minecraft Bedrock and run the function with: <code>/function &lt;pack-name&gt;</code></p>
           </div>
         </>
       )}

@@ -617,8 +617,11 @@ export default function MinecraftConverter() {
             <p><strong>Step 1:</strong> Position your photo using drag and zoom controls</p>
             <p><strong>Step 2:</strong> Choose a size and palette for your Minecraft blocks</p>
             <p><strong>Step 3:</strong> Watch the preview update automatically</p>
-            <p><strong>Step 4:</strong> Click "Save as .mcpack" to download the behavior pack</p>
-            <p><strong>Step 5:</strong> Import the .mcpack into Minecraft Bedrock and run the function with: <code>/function &lt;pack-name&gt;</code></p>
+            <p><strong>Step 4:</strong> Click "Save as .mcpack" to download the behavior pack to Files</p>
+            <p><strong>Step 5:</strong> Tap on the .mcpack into Files to import it into Minecraft </p>
+            <p><strong>Step 7:</strong> Edit your world to add the behavior pack.</p>
+            <p><strong>Step 8:</strong> Create a Command Block and add this as the function to run (change 10 to be however many blocks up you want it):</p>
+            <p><code>/execute positioned ~ ~10 ~ run function {packName}</code> </p>
           </div>
         </>
       )}
